@@ -1,0 +1,89 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <Target Name="PrepareNugetProperties">
+    <PropertyGroup>
+      <NugetSolutionDir>$(SolutionDir)</NugetSolutionDir>
+      <NugetSolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">$(MSBuildProjectDirectory)\..\</NugetSolutionDir>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_NugetExe Include="$(NugetSolutionDir)packages\Nuget.CommandLine.*\tools\nuget.exe" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <NugetExe>%(_NugetExe.FullPath)</NugetExe>
+      <NugetDefaultBasePath Condition=" '$(NugetDefaultBasePath)'=='' ">$(OutDir)</NugetDefaultBasePath>
+      <NugetDefaultOutputDirectory Condition=" '$(NugetDefaultOutputDirectory)'=='' ">$(OutDir)</NugetDefaultOutputDirectory>
+      <NugetPush Condition=" '$(NugetPush)'=='' ">false</NugetPush>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="PrepareNugetPack">
+
+    <ItemGroup>
+      <NugetPack Include="@(None)" Condition=" '%(Extension)'=='.nuspec' ">
+        <BasePath>$(NugetDefaultBasePath)</BasePath>
+        <OutputDirectory>$(NugetDefaultOutputDirectory)</OutputDirectory>
+        <!--
+   -Verbose
+   -Version
+   -Exclude +
+   -Symbols
+   -Tool
+   -Build
+   -NoDefaultExcludes
+   -NoPackageAnalysis
+   -Properties +
+          -->
+      </NugetPack>
+
+      <NugetPackWithTarget Include="@(NugetPack)">
+        <TargetOutput>%(OutputDirectory)\%(FileName).*.nupkg</TargetOutput>
+      </NugetPackWithTarget>
+    </ItemGroup>
+    
+    
+
+  </Target>
+
+  <Target Name="NugetPack"
+          AfterTargets="Build"
+          DependsOnTargets="PrepareNugetProperties;PrepareNugetPack"
+          Inputs="@(NugetPackWithTarget)"
+          Outputs="%(TargetOutput)">
+
+
+    <Exec Condition=" '%(NugetPack.Filename)'!='$(MSBuildProjectName)' "
+          Command="&quot;$(NugetExe)&quot; pack @(NugetPack) -BasePath %(BasePath) -OutputDirectory %(OutputDirectory)"
+          WorkingDirectory="$(MSBuildProjectDirectory)"
+          LogStandardErrorAsError="true" />
+
+    <Exec Condition=" '%(NugetPack.Filename)'=='$(MSBuildProjectName)' "
+          Command="&quot;$(NugetExe)&quot; pack $(MSBuildProjectFullPath) -Properties OutDir=$(OutDir) -OutputDirectory %(OutputDirectory)"
+          WorkingDirectory="$(MSBuildProjectDirectory)"
+          LogStandardErrorAsError="true" />
+
+  </Target>
+
+  <Target Name="NugetPush"
+          DependsOnTargets="NugetPack">
+
+    <PropertyGroup>
+      <Foo>@(NugetPackWithTarget->'%(TargetOutput)')</Foo>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <NugetPush Include="$(Foo)">
+        <Source>$(NugetDefaultSource)</Source>
+        <ApiKey>$(NugetDefaultApiKey)</ApiKey>
+      </NugetPush>
+    </ItemGroup>
+
+    <Exec Condition=" '$(NugetPush)'=='true' "
+          Command="&quot;$(NugetExe)&quot; push %(NugetPush.FullPath) -ApiKey %(ApiKey) -Source %(Source)"
+          WorkingDirectory="$(MSBuildProjectDirectory)"
+          LogStandardErrorAsError="true" />
+
+  </Target>
+</Project>

@@ -5,9 +5,9 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("CodeAssasssin.ZoneIdentifier")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyDescription("Use the IZoneIdentifer API to unblock downloaded files")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("")]
+[assembly: AssemblyCompany("Jason Stangroome")]
 [assembly: AssemblyProduct("CodeAssasssin.ZoneIdentifier")]
 [assembly: AssemblyCopyright("Copyright © Jason Stangroome 2012")]
 [assembly: AssemblyTrademark("")]
