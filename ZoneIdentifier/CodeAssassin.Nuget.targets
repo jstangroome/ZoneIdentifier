@@ -1,23 +1,21 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
-  <Target Name="PrepareNugetProperties">
-    <PropertyGroup>
-      <NugetSolutionDir>$(SolutionDir)</NugetSolutionDir>
-      <NugetSolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">$(MSBuildProjectDirectory)\..\</NugetSolutionDir>
-    </PropertyGroup>
+  <PropertyGroup>
+    <NugetSolutionDir>$(SolutionDir)</NugetSolutionDir>
+    <NugetSolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">$(MSBuildProjectDirectory)\..\</NugetSolutionDir>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <_NugetExe Include="$(NugetSolutionDir)packages\Nuget.CommandLine.*\tools\nuget.exe" />
+  </ItemGroup>
 
-    <ItemGroup>
-      <_NugetExe Include="$(NugetSolutionDir)packages\Nuget.CommandLine.*\tools\nuget.exe" />
-    </ItemGroup>
-
-    <PropertyGroup>
-      <NugetExe>%(_NugetExe.FullPath)</NugetExe>
-      <NugetDefaultBasePath Condition=" '$(NugetDefaultBasePath)'=='' ">$(OutDir)</NugetDefaultBasePath>
-      <NugetDefaultOutputDirectory Condition=" '$(NugetDefaultOutputDirectory)'=='' ">$(OutDir)</NugetDefaultOutputDirectory>
-      <NugetPush Condition=" '$(NugetPush)'=='' ">false</NugetPush>
-    </PropertyGroup>
-  </Target>
+  <PropertyGroup>
+    <NugetExe>@(_NugetExe->'%(FullPath)')</NugetExe>
+    <NugetDefaultBasePath Condition=" '$(NugetDefaultBasePath)'=='' ">$(OutDir)</NugetDefaultBasePath>
+    <NugetDefaultOutputDirectory Condition=" '$(NugetDefaultOutputDirectory)'=='' ">$(OutDir)</NugetDefaultOutputDirectory>
+    <NugetPush Condition=" '$(NugetPush)'=='' ">false</NugetPush>
+  </PropertyGroup>
 
   <Target Name="PrepareNugetPack">
 
@@ -49,7 +47,7 @@
 
   <Target Name="NugetPack"
           AfterTargets="Build"
-          DependsOnTargets="PrepareNugetProperties;PrepareNugetPack"
+          DependsOnTargets="PrepareNugetPack"
           Inputs="@(NugetPackWithTarget)"
           Outputs="%(TargetOutput)">
 
@@ -64,26 +62,29 @@
           WorkingDirectory="$(MSBuildProjectDirectory)"
           LogStandardErrorAsError="true" />
 
-  </Target>
-
-  <Target Name="NugetPush"
-          DependsOnTargets="NugetPack">
-
     <PropertyGroup>
-      <Foo>@(NugetPackWithTarget->'%(TargetOutput)')</Foo>
+      <NugetPushInclude>@(NugetPackWithTarget->'%(TargetOutput)')</NugetPushInclude>
     </PropertyGroup>
 
     <ItemGroup>
-      <NugetPush Include="$(Foo)">
+      <NugetPush Include="$(NugetPushInclude)">
         <Source>$(NugetDefaultSource)</Source>
         <ApiKey>$(NugetDefaultApiKey)</ApiKey>
       </NugetPush>
     </ItemGroup>
 
+    <ItemGroup>
+      <_NugetPushArgs Include="@(NugetPush->'%(FullPath)')" Condition=" '%(ApiKey)'=='' and '%(Source)'=='' "/>
+      <_NugetPushArgs Include="@(NugetPush->'%(FullPath) -Source %(Source)')" Condition=" '%(ApiKey)'=='' and '%(Source)'!='' "/>
+      <_NugetPushArgs Include="@(NugetPush->'%(FullPath) -ApiKey %(ApiKey)')" Condition=" '%(ApiKey)'!='' and '%(Source)'=='' "/>
+      <_NugetPushArgs Include="@(NugetPush->'%(FullPath) -ApiKey %(ApiKey) -Source %(Source)')" Condition=" '%(ApiKey)'!='' and '%(Source)'!='' "/>
+    </ItemGroup>
+    
     <Exec Condition=" '$(NugetPush)'=='true' "
-          Command="&quot;$(NugetExe)&quot; push %(NugetPush.FullPath) -ApiKey %(ApiKey) -Source %(Source)"
+          Command="&quot;$(NugetExe)&quot; push %(_NugetPushArgs.Identity)"
           WorkingDirectory="$(MSBuildProjectDirectory)"
           LogStandardErrorAsError="true" />
 
   </Target>
+
 </Project>
