@@ -1,7 +1,7 @@
 using System.IO;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace CodeAssassin
+namespace CodeAssassin.Tests
 {
     [TestClass]
     public class ZoneIdentifierTests
