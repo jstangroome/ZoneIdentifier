@@ -1,0 +1,67 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <Target Name="FindGit" 
+          Condition=" '$(GitPath)'=='' ">
+
+    <PropertyGroup>
+      <GitFileName Condition="'$(GitFileName)'==''">git.cmd</GitFileName>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_PATH Include="$(PATH)" />
+      <_GitPaths Include="%(_PATH.FullPath)\$(GitFileName)" Condition="Exists('%(_PATH.FullPath)\$(GitFileName)')" />
+    </ItemGroup>
+
+    <FindInList List="@(_GitPaths)" ItemSpecToFind="%(Identity)">
+      <Output TaskParameter="ItemFound" PropertyName="GitPath" />
+    </FindInList>
+
+    <Error Text="Could not find '$(GitFileName)' on path." Condition=" '$(GitPath)'=='' " />
+  </Target>
+
+  <Target Name="GetGitCommitHash"
+          DependsOnTargets="FindGit">
+
+    <Error Text="Git does not exist at '$(GitPath)'." Condition=" !Exists('$(GitPath)') " />
+
+    <PropertyGroup>
+      <GitTempFile>$([System.IO.Path]::GetTempFileName())</GitTempFile>
+      <GitCommitHashCommand>&quot;$(GitPath)&quot; show -s --pretty=format:%%H</GitCommitHashCommand>
+    </PropertyGroup>
+
+    <Exec Command="$(GitCommitHashCommand) >$(GitTempFile)" />
+
+    <ReadLinesFromFile File="$(GitTempFile)">
+      <Output TaskParameter="Lines" PropertyName="GitCommitHash" />
+    </ReadLinesFromFile>
+
+    <Delete Files="$(GitTempFile)" />
+
+  </Target>
+
+  <Target Name="GetGitCommitsSinceTag"
+          DependsOnTargets="FindGit">
+
+    <Error Text="Git does not exist at '$(GitPath)'." Condition=" !Exists('$(GitPath)') " />
+
+    <PropertyGroup>
+      <GitTempFile>$([System.IO.Path]::GetTempFileName())</GitTempFile>
+      <GitDescribeCommand>&quot;$(GitPath)&quot; describe --tags --long</GitDescribeCommand>
+    </PropertyGroup>
+
+    <Exec Command="$(GitDescribeCommand) >$(GitTempFile)" />
+
+    <ReadLinesFromFile File="$(GitTempFile)">
+      <Output TaskParameter="Lines" PropertyName="_GitDescribeOutput" />
+    </ReadLinesFromFile>
+
+    <Delete Files="$(GitTempFile)" />
+
+    <PropertyGroup>
+      <GitCommitsSinceTag>$([System.Text.RegularExpressions.Regex]::Match('$(_GitDescribeOutput)', '(?&lt;=\-)\d+(?=\-g)'))</GitCommitsSinceTag>
+    </PropertyGroup>
+
+  </Target>
+
+</Project>

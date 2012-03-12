@@ -1,0 +1,43 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <!-- Example usage: msbuild someproject.csproj /p:AssemblyVersion=1.2.3.4 -->
+
+  <Target Name="OverrideAssemblyVersion"
+          BeforeTargets="CoreCompile">
+    <CallTarget Condition="'$(AssemblyVersion)'!=''" Targets="CoreOverrideAssemblyVersion" />
+  </Target>
+
+  <Target Name="CoreOverrideAssemblyVersion">
+
+    <PropertyGroup>
+      <AssemblyInfoRelativePath>Properties\AssemblyInfo.cs</AssemblyInfoRelativePath>
+    </PropertyGroup>
+
+    <Error Condition="'$([System.Text.RegularExpressions.Regex]::IsMatch(&quot;$(AssemblyVersion)&quot;,&quot;^\d+\.\d+\.\d+\.\d+$&quot;))' == false"
+           Text="AssemblyVersion must be of the form 'n.n.n.n' where 'n' is a positive integer."/>
+
+    <Message Text="Setting assembly version to '$(AssemblyVersion)'" />
+
+    <ReadLinesFromFile File="$(AssemblyInfoRelativePath)">
+      <Output TaskParameter="Lines" ItemName="AssemblyInfoLines" />
+    </ReadLinesFromFile>
+
+    <ItemGroup>
+      <NewAssemblyInfoLines Include="@(AssemblyInfoLines)" Condition="'$([System.Text.RegularExpressions.Regex]::IsMatch(&quot;%(Identity)&quot;,&quot;(?i)Assembly(File)?Version&quot;))' == false" />
+
+      <NewAssemblyInfoLines Include="[assembly: AssemblyVersion(&quot;$(AssemblyVersion)&quot;)]" />
+      <NewAssemblyInfoLines Include="[assembly: AssemblyFileVersion(&quot;$(AssemblyVersion)&quot;)]" />
+    </ItemGroup>
+
+    <WriteLinesToFile File="$(AssemblyInfoRelativePath).versioned.cs"
+                      Lines="@(NewAssemblyInfoLines)"
+                      Overwrite="true" />
+
+    <ItemGroup>
+      <Compile Remove="$(AssemblyInfoRelativePath)" />
+      <Compile Include="$(AssemblyInfoRelativePath).versioned.cs" />
+    </ItemGroup>
+
+  </Target>
+
+</Project>

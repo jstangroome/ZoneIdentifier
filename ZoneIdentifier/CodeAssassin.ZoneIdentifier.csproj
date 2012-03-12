@@ -44,12 +44,16 @@
     <Compile Include="ZoneIdentifier.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="CodeAssassin.AssemblyVersion.targets" />
+    <None Include="CodeAssassin.Git.targets" />
     <None Include="CodeAssassin.Nuget.targets">
       <SubType>Designer</SubType>
     </None>
     <None Include="CodeAssassin.ZoneIdentifier.nuspec" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <Import Project="CodeAssassin.Git.targets" />
+  <Import Project="CodeAssassin.AssemblyVersion.targets" />
   <Import Project="CodeAssassin.Nuget.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
@@ -58,4 +62,24 @@
   <Target Name="AfterBuild">
   </Target>
   -->
+
+  <!-- based on http://lostechies.com/joshuaflanagan/2010/04/08/adding-git-commit-information-to-your-assemblies/ -->
+  <Target Name="VersionAssemblyWithGit"
+          DependsOnTargets="GetGitCommitHash;GetGitCommitsSinceTag"
+          BeforeTargets="OverrideAssemblyVersion">
+
+    <PropertyGroup>
+		<!--TODO consider FormatVersion task http://msdn.microsoft.com/en-us/library/ff595162.aspx -->
+      <AssemblyVersion>1.0.0.$(GitCommitsSinceTag)</AssemblyVersion>
+    </PropertyGroup>
+
+	<!--TODO set AssemblyInformationVersion with GitCommitHash -->
+	
+    <!--
+    <Message Text="GitPath: $(GitPath)" Importance="High" />
+    <Message Text="GitCommitHash: $(GitCommitHash)" Importance="High" />
+    <Message Text="GitCommitsSinceTag: $(GitCommitsSinceTag)" Importance="High" />
+    -->
+  </Target>
+
 </Project>
